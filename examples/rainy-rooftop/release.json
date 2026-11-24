@@ -1,0 +1,26 @@
+{
+  "idea": "rainy rooftop at 3am, neon reflections in puddles",
+  "title": "Neon Rooftop Drizzle",
+  "liner": "A nocturnal instrumental EP for wet asphalt and late arrivals—neon, fog, and the hush between beats.",
+  "tracks": [
+    {
+      "title": "Puddles at 3AM",
+      "mood": "Moody synth pads, muted trip-hop drums, brushed vinyl texture, 92 bpm, neon reverb and light detuned keys"
+    },
+    {
+      "title": "Rainwire Stairwell",
+      "mood": "Minimal techno kick, wet percussion splashes, sub-bass pulses, 128 bpm, metallic hats, sidechained atmosphere"
+    },
+    {
+      "title": "Rooftop Static Glow",
+      "mood": "Ambient downtempo with arpeggiated neon synths, distant thunder hits, 78 bpm, tape hiss, slow crescendo"
+    }
+  ],
+  "cover": "cover.png",
+  "audio": [
+    "track-1.mp3",
+    "track-2.mp3",
+    "track-3.mp3"
+  ],
+  "duration": 12
+}
