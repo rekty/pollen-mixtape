@@ -5,7 +5,9 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const DEFAULTS = { out: "out", tracks: 3, duration: 12 };
+// music is null by default: every music model on Pollinations is paid-only, so
+// audio is opt-in and a plain run stays on free models (text + image).
+const DEFAULTS = { out: "out", tracks: 3, duration: 12, music: null };
 
 function parseArgs(argv) {
   const opts = { ...DEFAULTS };
@@ -87,13 +89,13 @@ function coverArt(outDir, idea, title, seed) {
 }
 
 // elevenlabs/music-v2.5 rejects a seed together with a prompt, so audio is not seeded.
-function trackAudio(outDir, index, mood, duration) {
+function trackAudio(outDir, index, mood, duration, model) {
   const file = `track-${index + 1}.mp3`;
   const argv = [
     "gen",
     "audio",
     "--model",
-    "elevenlabs/music-v2.5",
+    model,
     "--instrumental",
     "--duration",
     String(duration),
@@ -103,18 +105,20 @@ function trackAudio(outDir, index, mood, duration) {
   return file;
 }
 
-function releaseCard(outDir, plan, cover, audio, idea) {
+function releaseCard(outDir, plan, cover, audio, idea, hint) {
   const esc = (s) =>
     String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const rows = plan.tracks
     .map(
       (t, i) => `      <li>
         <div class="track-head"><span class="num">${String(i + 1).padStart(2, "0")}</span><h2>${esc(t.title)}</h2></div>
-        <p class="mood">${esc(t.mood)}</p>
-        <audio controls preload="none" src="${esc(audio[i])}"></audio>
+        <p class="mood">${esc(t.mood)}</p>${
+          audio[i] ? `\n        <audio controls preload="none" src="${esc(audio[i])}"></audio>` : ""
+        }
       </li>`,
     )
     .join("\n");
+  const hintBlock = hint ? `\n      <p class="hint">${esc(hint)}</p>` : "";
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -140,6 +144,8 @@ function releaseCard(outDir, plan, cover, audio, idea) {
   .num { font-variant-numeric:tabular-nums; color:var(--dim); font-size:13px; }
   h2 { font-size:19px; margin:0; font-weight:600; }
   .mood { color:var(--dim); font-size:14px; margin:4px 0 10px; }
+  .hint { color:var(--dim); font-size:13px; margin:18px 0 0; padding:10px 12px; border:1px solid var(--line);
+          border-radius:4px; background:rgba(244,241,234,.04); }
   audio { width:100%; height:36px; }
   footer { margin-top:36px; color:var(--dim); font-size:12px; }
 </style>
@@ -151,7 +157,7 @@ function releaseCard(outDir, plan, cover, audio, idea) {
     <div>
       <p class="kicker">Instrumental EP · Pollen Mixtape</p>
       <h1>${esc(plan.title)}</h1>
-      <p class="liner">${esc(plan.liner || idea)}</p>
+      <p class="liner">${esc(plan.liner || idea)}</p>${hintBlock}
     </div>
   </header>
   <ol>
@@ -177,16 +183,27 @@ function main() {
   const cover = coverArt(outDir, opts.idea, plan.title, opts.seed);
   process.stderr.write(`  cover: ${cover}\n`);
 
+  // Without --music nothing paid runs: the card lists the prompts and says how to render them.
   const audio = [];
-  plan.tracks.forEach((track, i) => {
-    process.stderr.write(`  ${i + 1}/${plan.tracks.length} ${track.title}...\n`);
-    audio.push(trackAudio(outDir, i, track.mood, opts.duration));
-  });
+  if (opts.music) {
+    process.stderr.write(`  rendering ${plan.tracks.length} tracks with ${opts.music} (paid)...\n`);
+    plan.tracks.forEach((track, i) => {
+      process.stderr.write(`  ${i + 1}/${plan.tracks.length} ${track.title}...\n`);
+      audio.push(trackAudio(outDir, i, track.mood, opts.duration, opts.music));
+    });
+  }
 
-  releaseCard(outDir, plan, cover, audio, opts.idea);
+  const hint = opts.music
+    ? null
+    : `Audio is opt-in because every music model is paid-only: re-run with --music elevenlabs/music-v2.5 to render these ${plan.tracks.length} prompts into loops.`;
+  releaseCard(outDir, plan, cover, audio, opts.idea, hint);
   writeFileSync(
     join(outDir, "release.json"),
-    JSON.stringify({ idea: opts.idea, ...plan, cover, audio, duration: opts.duration }, null, 2),
+    JSON.stringify(
+      { idea: opts.idea, ...plan, cover, audio, audioModel: opts.music, duration: opts.duration },
+      null,
+      2,
+    ),
   );
 
   process.stdout.write(`${outDir}\n`);
