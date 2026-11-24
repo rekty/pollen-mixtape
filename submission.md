@@ -4,7 +4,7 @@ Pollen Mixtape
 
 ### App Description
 
-Turns one line of mood into an EP release: cover art, liner notes, a music prompt per track and a playable local release card, generated for free through Pollinations models with the polli CLI; renders the tracks only when you opt into a paid music model.
+Turn one line of mood into an EP: cover art, liner notes, a prompt per track and a playable card, free with the polli CLI; audio renders only when you opt into a paid music model.
 
 ### App URL
 
